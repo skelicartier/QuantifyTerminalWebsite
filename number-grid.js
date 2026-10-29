@@ -1,9 +1,10 @@
 /* Hero data field.
-   A quiet grid of market numbers behind the homepage headline. The field
-   drifts, occasionally reprices itself, and opens around the pointer: cells
-   near the cursor brighten, shift aside and turn brand purple, while a soft
-   column follows the pointer from left to right. It is decorative, so it
-   never receives pointer events and is hidden from assistive technology. */
+   A dense, quiet grid of market numbers behind the homepage headline. Columns
+   keep their own format (price, percent, ratio, volume, delta), values refresh
+   in a slow diagonal sweep, and a restrained lens follows the pointer: nearby
+   cells brighten, shift a little and take the brand purple. The canvas is
+   decorative, never receives pointer events, and is hidden from assistive
+   technology. */
 (function () {
   var canvas = document.querySelector("[data-number-field]");
   if (!canvas) return;
@@ -15,11 +16,11 @@
   var reduceMotion = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  var CELL_W = 92;
-  var CELL_H = 32;
-  var SPOT_RADIUS = 210;
-  var BAND_WIDTH = 145;
-  var FONT = '10.5px ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
+  var CELL_W = 56;
+  var CELL_H = 18;
+  var SPOT_RADIUS = 190;
+  var BAND_WIDTH = 150;
+  var FONT = '8.5px ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
 
   var width = 0;
   var height = 0;
@@ -33,26 +34,45 @@
   var pointer = { x: 0, y: 0, active: false };
   var smooth = { x: 0, y: 0, active: 1 };
 
+  var FORMATS = [
+    { kind: "price" },
+    { kind: "percent" },
+    { kind: "ratio" },
+    { kind: "volume" },
+    { kind: "delta" },
+    { kind: "price" },
+    { kind: "percent" },
+    { kind: "ratio" }
+  ];
+
   function rand(min, max) {
     return min + Math.random() * (max - min);
   }
 
-  function value() {
-    var kind = Math.random();
-    if (kind < 0.3) return (Math.random() * 900 + 10).toFixed(2);
-    if (kind < 0.52) {
-      return (Math.random() < 0.5 ? "+" : "-") +
-        (Math.random() * 3.5).toFixed(2) + "%";
+  function commas(value) {
+    return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function value(format) {
+    var n;
+    if (format.kind === "price") {
+      n = rand(8, 950);
+      return n.toFixed(2);
     }
-    if (kind < 0.68) return (Math.random() * 9 + 0.1).toFixed(2);
-    if (kind < 0.82) {
-      return (Math.random() * 12000 + 100)
-        .toFixed(0)
-        .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    if (format.kind === "percent") {
+      n = rand(0.02, 3.4);
+      return (Math.random() < 0.5 ? "+" : "-") + n.toFixed(2) + "%";
     }
-    if (kind < 0.92) return (Math.random() * 0.09).toFixed(4);
-    return (Math.random() < 0.5 ? "+" : "-") +
-      (Math.random() * 120).toFixed(2);
+    if (format.kind === "ratio") {
+      n = rand(0.0001, 0.0999);
+      return n.toFixed(4);
+    }
+    if (format.kind === "volume") {
+      n = Math.round(rand(100, 12500));
+      return commas(n);
+    }
+    n = rand(0.01, 95);
+    return (Math.random() < 0.5 ? "+" : "-") + n.toFixed(2);
   }
 
   function build() {
@@ -71,21 +91,35 @@
 
     var cols = Math.ceil(width / CELL_W) + 1;
     var rows = Math.ceil(height / CELL_H) + 1;
-    cells = [];
+    var columnFormats = [];
+    var columnOpacity = [];
+    var hiddenColumns = [];
 
+    for (var c = 0; c < cols; c++) {
+      columnFormats[c] = FORMATS[Math.floor(Math.random() * FORMATS.length)];
+      columnOpacity[c] = rand(0.55, 1);
+      hiddenColumns[c] = Math.random() < 0.15;
+    }
+
+    cells = [];
     for (var row = 0; row < rows; row++) {
       for (var col = 0; col < cols; col++) {
-        var hidden = Math.random() < 0.24;
+        var hidden = hiddenColumns[col] || Math.random() < 0.07;
+        var base = hidden
+          ? rand(0.008, 0.026)
+          : rand(0.035, 0.11) * columnOpacity[col];
         cells.push({
-          x: col * CELL_W + rand(-4, 4),
-          y: row * CELL_H + CELL_H / 2 + rand(-3, 3),
-          value: value(),
-          base: hidden ? rand(0.015, 0.055) : rand(0.07, 0.24),
+          x: col * CELL_W,
+          y: row * CELL_H + CELL_H / 2,
+          value: value(columnFormats[col]),
+          format: columnFormats[col],
+          base: base,
           hidden: hidden,
-          depth: rand(0.45, 1.15),
+          depth: rand(0.5, 1.1),
           phase: rand(0, Math.PI * 2),
-          speed: rand(0.08, 0.22),
-          next: rand(0, 7)
+          speed: rand(0.05, 0.16),
+          next: rand(0, 8),
+          col: col
         });
       }
     }
@@ -107,50 +141,71 @@
     var mx = smooth.x;
     var my = smooth.y;
     var active = smooth.active;
-    var globalX = (mx / width - 0.5) * 16;
-    var globalY = (my / height - 0.5) * 11;
+    var globalX = (mx / width - 0.5) * 10;
+    var globalY = (my / height - 0.5) * 7;
+    var sweepPos = ((time * 0.14) % 1.35) - 0.15;
+    var sweepCoord = sweepPos * (height + width * 0.32);
+
+    if (active > 0.01) {
+      var aura = ctx.createRadialGradient(mx, my, 0, mx, my, 230);
+      aura.addColorStop(0, "rgba(152,16,250," + (0.03 * active) + ")");
+      aura.addColorStop(0.55, "rgba(152,16,250," + (0.012 * active) + ")");
+      aura.addColorStop(1, "rgba(152,16,250,0)");
+      ctx.fillStyle = aura;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    ctx.textAlign = "right";
 
     for (var i = 0; i < cells.length; i++) {
       var cell = cells[i];
-      var d = Math.sqrt(
-        (cell.x - mx) * (cell.x - mx) + (cell.y - my) * (cell.y - my)
-      );
+      var dx = cell.x - mx;
+      var dy = cell.y - my;
+      var d = Math.sqrt(dx * dx + dy * dy);
       var spot = active > 0.01
         ? Math.max(0, 1 - d / SPOT_RADIUS)
         : 0;
       spot = spot * spot * (3 - 2 * spot);
       var band = active > 0.01
-        ? Math.exp(-Math.pow((cell.x - mx) / BAND_WIDTH, 2)) * 0.2
+        ? Math.exp(-Math.pow((cell.x - mx) / BAND_WIDTH, 2)) * 0.14
         : 0;
       var influence = Math.min(1, spot + band);
+      var coord = cell.x * 0.32 + cell.y;
+      var sweep = Math.exp(-Math.pow((coord - sweepCoord) / 24, 2));
 
-      if (time > cell.next) {
-        cell.value = value();
-        cell.next = time + 1.8 + Math.random() * 5.2 +
-          (1 - influence) * 3.2;
+      if ((sweep > 0.55 || influence > 0.58) && time > cell.next) {
+        cell.value = value(cell.format);
+        cell.next = time + (influence > 0.58
+          ? 2.2 + Math.random() * 2.8
+          : 5.5 + Math.random() * 5.5);
       }
 
-      var x = cell.x + Math.sin(time * cell.speed + cell.phase) * 3 +
+      var colPhase = cell.col * 0.65;
+      var x = cell.x +
+        Math.sin(time * cell.speed + cell.phase) * 1.1 +
+        Math.sin(time * 0.12 + colPhase) * 1.2 +
         globalX * cell.depth;
-      var y = cell.y + Math.cos(time * cell.speed * 0.8 + cell.phase * 1.7) * 2 +
+      var y = cell.y +
+        Math.cos(time * cell.speed * 0.8 + cell.phase * 1.6) * 0.9 +
+        Math.sin(time * 0.16 + colPhase) * 0.9 +
         globalY * cell.depth;
 
-      if (active > 0.01 && d < 190) {
-        var push = (1 - d / 190) * 8;
-        x += ((cell.x - mx) / (d || 1)) * push * 1.4;
-        y += ((cell.y - my) / (d || 1)) * push * 0.55;
+      if (active > 0.01 && d < 170) {
+        var push = (1 - d / 170) * 3.2;
+        x += (dx / (d || 1)) * push;
+        y += (dy / (d || 1)) * push * 0.45;
       }
 
-      var alpha = cell.base + influence * (0.86 - cell.base);
-      if (cell.hidden && influence < 0.1) alpha *= 0.55;
-      alpha = Math.max(0, Math.min(0.9, alpha));
+      var alpha = cell.base + influence * (0.6 - cell.base) + sweep * 0.045;
+      if (cell.hidden && influence < 0.08) alpha *= 0.3;
+      alpha = Math.max(0, Math.min(0.66, alpha));
 
-      var p = Math.min(1, influence * 1.35);
+      var p = Math.min(1, Math.pow(influence, 1.45));
       var red = Math.round(11 + (152 - 11) * p);
       var green = Math.round(14 + (16 - 14) * p);
       var blue = Math.round(23 + (250 - 23) * p);
       ctx.fillStyle = "rgba(" + red + "," + green + "," + blue + "," + alpha + ")";
-      ctx.fillText(cell.value, x, y);
+      ctx.fillText(cell.value, x + CELL_W - 9, y);
     }
   }
 
@@ -188,6 +243,16 @@
     raf = 0;
   }
 
+  function setLens(x, y) {
+    stage.style.setProperty("--mx", x + "px");
+    stage.style.setProperty("--my", y + "px");
+  }
+
+  function clearLens() {
+    stage.style.setProperty("--mx", "-999px");
+    stage.style.setProperty("--my", "-999px");
+  }
+
   function onPointerMove(event) {
     var rect = stage.getBoundingClientRect();
     var x = event.clientX - rect.left;
@@ -197,13 +262,23 @@
       pointer.x = x;
       pointer.y = y;
       pointer.active = true;
+      setLens(x, y);
     } else {
       pointer.active = false;
+      clearLens();
     }
   }
 
   function onPointerLeave() {
     pointer.active = false;
+    clearLens();
+  }
+
+  function onPointerEnd(event) {
+    if (event.pointerType === "touch" || event.pointerType === "pen") {
+      pointer.active = false;
+      clearLens();
+    }
   }
 
   function onVisibilityChange() {
@@ -223,6 +298,8 @@
 
   draw(0);
   window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerup", onPointerEnd, { passive: true });
+  window.addEventListener("pointercancel", onPointerEnd, { passive: true });
   window.addEventListener("blur", onPointerLeave);
   document.documentElement.addEventListener("pointerleave", onPointerLeave);
   document.addEventListener("visibilitychange", onVisibilityChange);

@@ -7740,13 +7740,17 @@ a.benefit-card:hover h3 { text-decoration: underline; text-underline-offset: 3px
 
 /* ============================================================================
    HERO DATA FIELD
-   A quiet grid of numbers behind the homepage headline. It is painted on a
-   canvas so the field can hold hundreds of cells without adding hundreds of
-   nodes; the canvas is decorative and never receives pointer events. The
-   white wash keeps the headline and body copy at full contrast while leaving
-   the edges and the right-hand side of the field visible.
+   A dense, quiet grid of market numbers behind the homepage headline. It is
+   painted on a canvas so the field can hold hundreds of cells without adding
+   hundreds of nodes; the canvas is decorative and never receives pointer
+   events. A responsive white wash keeps the headline and body copy at full
+   contrast, while a soft pointer lens cuts through the wash so the field can
+   be inspected without ever competing with the copy.
    ========================================================================== */
 .hero-stage {
+  --mx: -999px;
+  --my: -999px;
+  --lens: 108px;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -7759,7 +7763,7 @@ a.benefit-card:hover h3 { text-decoration: underline; text-underline-offset: 3px
   width: 100%;
   height: 100%;
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 0.85;
   -webkit-mask-image: radial-gradient(ellipse 96% 90% at 50% 48%, #000 48%, transparent 100%);
   mask-image: radial-gradient(ellipse 96% 90% at 50% 48%, #000 48%, transparent 100%);
 }
@@ -7770,7 +7774,9 @@ a.benefit-card:hover h3 { text-decoration: underline; text-underline-offset: 3px
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(ellipse 54% 56% at 38% 42%, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.86) 44%, rgba(255, 255, 255, 0.25) 70%, rgba(255, 255, 255, 0) 84%);
+  background: radial-gradient(ellipse 54% 56% at 38% 42%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.80) 44%, rgba(255, 255, 255, 0.20) 70%, rgba(255, 255, 255, 0) 86%);
+  -webkit-mask-image: radial-gradient(circle var(--lens) at var(--mx) var(--my), transparent 0%, rgba(0, 0, 0, 0.20) 55%, #000 100%);
+  mask-image: radial-gradient(circle var(--lens) at var(--mx) var(--my), transparent 0%, rgba(0, 0, 0, 0.20) 55%, #000 100%);
 }
 
 .hero-stage .hero-solo-inner {
@@ -7779,20 +7785,44 @@ a.benefit-card:hover h3 { text-decoration: underline; text-underline-offset: 3px
   padding-bottom: 64px;
 }
 
+@media (max-width: 1500px) {
+  .hero-stage {
+    --lens: 100px;
+  }
+  .hero-stage::after {
+    background: radial-gradient(ellipse 78% 68% at 42% 40%, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.91) 52%, rgba(255, 255, 255, 0.50) 76%, rgba(255, 255, 255, 0) 96%);
+  }
+}
+
+@media (min-width: 1501px) {
+  .hero-stage::after {
+    background: radial-gradient(ellipse 900px 620px at 50% 42%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.94) 55%, rgba(255, 255, 255, 0.55) 80%, rgba(255, 255, 255, 0) 100%);
+  }
+}
+
+@media (max-width: 1100px) {
+  .hero-stage {
+    --lens: 88px;
+  }
+}
+
 @media (max-width: 720px) {
+  .hero-stage {
+    --lens: 72px;
+  }
   .hero-stage .hero-solo-inner {
     padding-bottom: 36px;
   }
   .hero-data-field {
-    opacity: 0.45;
+    opacity: 0.55;
   }
   .hero-stage::after {
-    background: radial-gradient(ellipse 90% 58% at 42% 38%, rgba(255, 255, 255, 0.99) 0%, rgba(255, 255, 255, 0.92) 48%, rgba(255, 255, 255, 0.35) 72%, rgba(255, 255, 255, 0) 88%);
+    background: radial-gradient(ellipse 90% 58% at 42% 38%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.90) 48%, rgba(255, 255, 255, 0.30) 72%, rgba(255, 255, 255, 0) 88%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-data-field {
-    opacity: 0.45;
+    opacity: 0.50;
   }
 }
