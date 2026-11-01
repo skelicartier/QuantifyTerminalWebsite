@@ -6558,7 +6558,7 @@ a.benefit-card:hover h3 { text-decoration: underline; text-underline-offset: 3px
   .hdr-nav a {
     padding: 8px 0;
     color: var(--text);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.09em;
     text-transform: uppercase;
