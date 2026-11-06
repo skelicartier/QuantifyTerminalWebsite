@@ -34,7 +34,47 @@
       "permanent": true
     }
   ],
+  "rewrites": [
+    {
+      "source": "/deck",
+      "destination": "/quantify-terminal-investor-deck.pdf"
+    }
+  ],
   "headers": [
+    {
+      "source": "/deck",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive, nosnippet, noimageindex"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "inline; filename=\"Quantify Terminal - Investor Deck - November 2026.pdf\""
+        }
+      ]
+    },
+    {
+      "source": "/quantify-terminal-investor-deck.pdf",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive, nosnippet, noimageindex"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "inline; filename=\"Quantify Terminal - Investor Deck - November 2026.pdf\""
+        }
+      ]
+    },
     {
       "source": "/yc-application",
       "headers": [
